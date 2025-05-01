@@ -13,11 +13,13 @@ pip install -r requirements.txt
 git clone https://github.com/bentoml/BentoML.git
 ```
 #### 3. 获取 commit
+
 ```
 cd BentoML/
-git log --oneline <tag>
+git log --oneline <tag> 
 ```
-可以在 git_log.txt 中查看样例
+复制输出到 `commit_id.txt` 文件中  
+可以在 `git_log.txt` 中查看样例
 #### 4. 生成输入文件
 ```
 python generate.py
