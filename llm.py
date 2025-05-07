@@ -1,11 +1,10 @@
 from google import genai
 from google.genai import types
-
-gemini_api_key = 'your gemini api key'
+from constants import GEMINI_API_KEY
 
 class LLM:
     def __init__(self, model:str = 'gemini-2.0-flash'): # gemini-2.0-flash-lite
-        self.client = genai.Client(api_key=gemini_api_key)
+        self.client = genai.Client(api_key=GEMINI_API_KEY)
         self.model = model
         self.should_reason = False
 
