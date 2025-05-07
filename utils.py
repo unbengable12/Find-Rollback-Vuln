@@ -93,7 +93,7 @@ def save_file(path:str, filename:str, content: str):
         if not os.path.exists(path):
             os.makedirs(path)
         with open(os.path.join(path, filename), 'w', encoding='utf-8') as f:
-            f.write(content.strip('```json').strip('```'))
+            f.write(content.strip('```markdown').strip('```').strip('markdown'))
         print(f"已保存到 {os.path.join(path, filename)}")
     except Exception as e:
         print(f"保存出错: {e}")
