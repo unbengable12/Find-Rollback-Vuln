@@ -16,9 +16,10 @@ parser.add_argument('-g', '--github', type=str, required=False, help='GitHub仓�
 parser.add_argument('-r', '--repo', type=str, required=False, help='仓库名')
 parser.add_argument('-m', '--model', type=str, required=False, help='模型名', default='gemini-2.0-flash-lite', choices=['gemini-2.0-flash-lite', 'gemini-2.0-flash'])
 parser.add_argument('-n', '--number', type=int, required=False, help='检查最近提交的commit数量', default=999999999999)
+parser.add_argument('-a', '--auto', type=bool, required=False, help='是否自动生成commit_id.txt', default=True)
 args = parser.parse_args()
 
-github_url, repo, model, number = args.github, args.repo, args.model, args.number
+github_url, repo, model, number, auto = args.github, args.repo, args.model, args.number, args.auto
 
 if github_url is None and repo is None:
     print("错误: GitHub 链接和仓库名不能同时为空。")
@@ -74,7 +75,7 @@ id_path = os.path.join(cur_dir, 'commit_id.txt')
 dir = os.path.join(cur_dir, 'output')
 output_path = os.path.join(cur_dir, 'result')
 
-generate(repo=repo_dir, number=number)
+generate(repo=repo_dir, number=number, auto=auto)
 
 # 读取待分析的commitId
 ids = []

@@ -19,3 +19,8 @@ python run.py -g <github_url> -r <repo_name> -m <model> -n <number>
 -n: 查询个数，默认为9999999999999
 ```
 结果保存在 `result` 文件夹中
+
+### TODO
+```
+优化性能
+```
