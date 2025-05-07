@@ -4,10 +4,68 @@ import os
 import json
 from utils import *
 from prompt import *
-
-gemini = LLM(model='gemini-2.0-flash-lite')
+import argparse
+from urllib.parse import urlparse
+import shutil
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
+
+parser = argparse.ArgumentParser(description="命令行参数示例")
+parser.add_argument('-g', '--github', type=str, required=False, help='GitHub仓库链接')
+parser.add_argument('-r', '--repo', type=str, required=False, help='仓库名')
+parser.add_argument('-m', '--model', type=str, required=False, help='模型名', default='gemini-2.0-flash-lite', choices=['gemini-2.0-flash-lite', 'gemini-2.0-flash'])
+args = parser.parse_args()
+
+github_url, repo, model = args.github, args.repo, args.model
+
+if github_url is None and repo is None:
+    print("错误: GitHub 链接和仓库名不能同时为空。")
+    exit(1)
+
+if github_url and repo is None:
+    path = urlparse(github_url).path
+    repo = os.path.splitext(os.path.basename(path))[0].lower()
+    if not repo:
+        print("错误: 无法从 GitHub 链接中解析出仓库名。")
+        exit(1)
+        
+if github_url is None and repo:
+    repo_dir = os.path.join(cur_dir, 'temp', repo)
+    if not os.path.exists(repo_dir):
+        print(f"本地仓库 {repo} 不存在")
+    print(f"使用本地仓库 {repo_dir}")
+    
+if github_url:
+    temp_dir = os.path.join(cur_dir, 'temp')
+    repo_dir = os.path.join(temp_dir, repo)
+    
+    # 创建 temp 文件夹
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    
+    clone = True
+    
+    # 仓库已经存在
+    if os.path.exists(repo_dir):
+        print(f"仓库 '{repo}' 已存在，是否重新 clone?")
+        choice = input("请输入 Y/N: ").strip().upper()
+        if choice == 'Y':
+            print(f"正在删除旧仓库：{repo_dir}")
+            shutil.rmtree(repo_dir)
+        else:
+            print("已取消克隆操作")
+            clone = False
+    
+    try:
+        # 尝试克隆仓库
+        if clone:
+            subprocess.run(['git', 'clone', github_url, repo_dir], check=True)
+            print(f"已将 {github_url} 克隆到 {repo_dir}")
+    except subprocess.CalledProcessError as e:
+        print(f"克隆失败: {e}")
+        exit(1)
+
+gemini = LLM(model=model)
 
 id_path = f'{cur_dir}/commit_id.txt'
 dir = f'{cur_dir}/output/'
