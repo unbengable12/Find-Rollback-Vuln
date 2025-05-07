@@ -1,1 +1,1 @@
-0597dfe464c037964fdbd09a35226c9bc7035173 (tag: v1.2.5) fix: add str in enum for deployment schema (#4549)
+fd70379733c57c6368cc022ac1f841b7b426db7b feat(client): disallow media type other than json for HTTP clients (#4520)

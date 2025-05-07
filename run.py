@@ -1,9 +1,7 @@
 from llm import LLM
 
-from analysis import parse_commit_file
 import os
 import json
-import re
 from utils import *
 from prompt import *
 
@@ -15,6 +13,7 @@ id_path = f'{cur_dir}/commit_id.txt'
 dir = f'{cur_dir}/output/'
 output_path = f'{cur_dir}/result/'
 
+# 读取待分析的commitId
 ids = []
 with open(id_path) as f:
     for line in f.readlines():
@@ -27,21 +26,25 @@ for id in ids:
         print(f"未找到{id}.txt")
         continue
     print(file_path)
+    
+    # 获取commitA的回滚信息
     commmitA = ''
     with open(file_path, 'r', encoding='utf-8') as f:
         commmitA = ''.join(f.readlines())
     print(commmitA)
+    
+    # 后续没有回滚代码
     if commmitA.rfind("没有后续提交删除了commitA添加的代码") != -1:
         continue
-    fix = get_fix(id).strip() + "\n"
+    
+    # 获取修复补丁注释
+    fix = get_fix(id)
     print(fix)
     if fix == 'None':
         continue
-    content = ''
-    with open(f'/home/lanbigking/Desktop/test/output/{id}.txt') as f:
-        content = ''.join(f.readlines())
-        
-    prompt = FIND_COMMIT_HASH_PROMPT + f"修复补丁注释为:\n{fix}"  + f"具体内容为:\n{content}"
+    
+    # 进行第一次分析
+    prompt = FIND_COMMIT_HASH_PROMPT.replace('<fix>', fix).replace('<content>', commmitA)
     print(f"prompt: \n{prompt}\n")
 
     analysis = gemini.prompt(prompt=prompt).strip('```json').strip('```').strip()
@@ -54,6 +57,7 @@ for id in ids:
         continue
     print(data["commitA"])
     
+    # 对后续回滚的commit进行第二次大模型分析
     for r in data["rollback_commits"]:
         hash = r["hash"]
         print(hash)
@@ -62,10 +66,13 @@ for id in ids:
         commit = get_commit(hash)
         if commit == 'None':
             continue
-        prompt = GENERATOR_MARKDOWN_REPORTER.format(analysis=data["commitA"], hash=hash, content=commit)
-        print(prompt)
+        
+        prompt = GENERATOR_MARKDOWN_REPORTER.replace('<analysis>', data["commitA"]).replace('<hash>', hash).replace('commit', commit)
+        print(f"prompt: \n{prompt}\n")
         res = gemini.prompt(prompt=prompt)
-        print(res)
+        print(f"res: \n{res}\n")
+        
+        # 大模型生成中没有找到 “用其他代码完成了补丁任务” 则打印markdown文档
         if res.find("用其他代码完成了补丁任务") == -1:
             save_file(output_path, f"{id}.md", res)
     

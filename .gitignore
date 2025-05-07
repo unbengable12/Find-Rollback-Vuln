@@ -2,7 +2,4 @@ __pycache__/
 logging/
 output/
 result/
-
-test.py
-test1.py
-todo.md
+test/

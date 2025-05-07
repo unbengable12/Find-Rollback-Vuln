@@ -45,8 +45,12 @@ FIND_COMMIT_HASH_PROMPT = '''
     }
   ]
 }
-```
 
+修复补丁注释为:
+<fix>
+
+具体内容为:
+<content>
 '''
 
 GENERATOR_MARKDOWN_REPORTER = '''
@@ -67,8 +71,8 @@ Markdown 文档要求
 - 突出任务 3 的分析结果，确保读者能快速了解是否有替代代码完成补丁任务。
 
 CommitA内容
-{analysis}
+<analysis>
 
-Commit {hash}内容
-{content}
+Commit <hash>内容
+<content>
 '''

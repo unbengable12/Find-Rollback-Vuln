@@ -21,7 +21,7 @@ def get_fix(commit_hash:str) -> str:
             text = "".join(f.readlines())
         match = re.search(pattern, text)
         if match:
-            return match.group(1)
+            return match.group(1).strip()
         else:
             return "None"
     except subprocess.CalledProcessError as e:
