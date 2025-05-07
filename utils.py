@@ -10,14 +10,14 @@ def get_filenames(git_commit_json:json) -> set:
         new_set.add(file.get('filename'))
     return new_set
 
-def get_fix(commit_hash:str) -> str:
-    bentoml_dir = "/home/lanbigking/Desktop/vuln/BentoML"
+def get_fix(repo, commit_hash:str) -> str:
+    bentoml_dir = repo
     get_log_command = f'git log -1 --pretty=%B {commit_hash} > log.txt'
     try:
         subprocess.run(get_log_command, cwd=bentoml_dir, check=True, text=True, capture_output=True, shell=True)
         pattern = r'\* fix: (.*)'
         text = ''
-        with open(bentoml_dir + '/log.txt') as f:
+        with open(os.path.join(bentoml_dir, 'log.txt')) as f:
             text = "".join(f.readlines())
         match = re.search(pattern, text)
         if match:
@@ -41,8 +41,8 @@ def is_commit_exists(repo_path:str, commit_hash:str) -> bool:
         print(f"执行命令时出错: {e}")
         return False
 
-def get_commit(commit_hash:str) -> json:
-    bentoml_dir = "/home/lanbigking/Desktop/vuln/BentoML"
+def get_commit(repo, commit_hash:str) -> json:
+    bentoml_dir = repo
     if not is_commit_exists(bentoml_dir, commit_hash):
         return "None"
     # 定义要执行的 git show 命令
@@ -50,7 +50,7 @@ def get_commit(commit_hash:str) -> json:
     # 执行命令并指定工作目录
     try:
         subprocess.run(git_show_command, cwd=bentoml_dir, check=True, text=True, capture_output=True, shell=True)
-        return json.loads(json.dumps(parse_commit_file(bentoml_dir + '/commit.txt')))
+        return json.loads(json.dumps(parse_commit_file(os.path.join(bentoml_dir, 'commit.txt'))))
     except subprocess.CalledProcessError as e:
         print("Error executing git show:", e)
     except FileNotFoundError as e:
@@ -92,9 +92,9 @@ def save_file(path:str, filename:str, content: str):
     try:
         if not os.path.exists(path):
             os.makedirs(path)
-        with open(path+filename, 'w', encoding='utf-8') as f:
-            f.write(content)
-        print(f"已保存到 {path+filename}")
+        with open(os.path.join(path, filename), 'w', encoding='utf-8') as f:
+            f.write(content.strip('```json').strip('```'))
+        print(f"已保存到 {os.path.join(path, filename)}")
     except Exception as e:
         print(f"保存出错: {e}")
     

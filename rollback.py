@@ -30,8 +30,14 @@ def group_consecutive_lines(lines):
         result.append((start_line, end_line, contents))
     return result
 
+# 定义并验证commitA_hash
+parser = argparse.ArgumentParser(description='处理 commit hash 参数')
+parser.add_argument('-repo', type=str, help='指定 repo')
+parser.add_argument('-commit', type=str, help='指定 commit hash')
+args = parser.parse_args()
+
 # 检查仓库路径
-repo_path = "/home/lanbigking/Desktop/vuln/BentoML"
+repo_path = args.repo
 if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
     print(f"错误：仓库路径不存在 - {repo_path}")
     exit(1)
@@ -42,10 +48,6 @@ if not os.path.exists(os.path.join(repo_path, ".git")):
 repo = git.Repo(repo_path)
 print(f"仓库路径有效: {repo_path}")
 
-# 定义并验证commitA_hash
-parser = argparse.ArgumentParser(description='处理 commit hash 参数')
-parser.add_argument('-commit', type=str, help='指定 commit hash')
-args = parser.parse_args()
 commitA_hash = ""
 if args.commit:
     commitA_hash = args.commit

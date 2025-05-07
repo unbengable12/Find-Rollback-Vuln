@@ -7,6 +7,7 @@ from prompt import *
 import argparse
 from urllib.parse import urlparse
 import shutil
+from generate import generate
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,9 +15,10 @@ parser = argparse.ArgumentParser(description="命令行参数示例")
 parser.add_argument('-g', '--github', type=str, required=False, help='GitHub仓库链接')
 parser.add_argument('-r', '--repo', type=str, required=False, help='仓库名')
 parser.add_argument('-m', '--model', type=str, required=False, help='模型名', default='gemini-2.0-flash-lite', choices=['gemini-2.0-flash-lite', 'gemini-2.0-flash'])
+parser.add_argument('-n', '--number', type=int, required=False, help='检查最近提交的commit数量', default=999999999999)
 args = parser.parse_args()
 
-github_url, repo, model = args.github, args.repo, args.model
+github_url, repo, model, number = args.github, args.repo, args.model, args.number
 
 if github_url is None and repo is None:
     print("错误: GitHub 链接和仓库名不能同时为空。")
@@ -28,9 +30,10 @@ if github_url and repo is None:
     if not repo:
         print("错误: 无法从 GitHub 链接中解析出仓库名。")
         exit(1)
-        
+
+repo_dir = os.path.join(cur_dir, 'temp', repo)
+
 if github_url is None and repo:
-    repo_dir = os.path.join(cur_dir, 'temp', repo)
     if not os.path.exists(repo_dir):
         print(f"本地仓库 {repo} 不存在")
     print(f"使用本地仓库 {repo_dir}")
@@ -67,19 +70,25 @@ if github_url:
 
 gemini = LLM(model=model)
 
-id_path = f'{cur_dir}/commit_id.txt'
-dir = f'{cur_dir}/output/'
-output_path = f'{cur_dir}/result/'
+id_path = os.path.join(cur_dir, 'commit_id.txt')
+dir = os.path.join(cur_dir, 'output')
+output_path = os.path.join(cur_dir, 'result')
+
+generate(repo=repo_dir, number=number)
 
 # 读取待分析的commitId
 ids = []
 with open(id_path) as f:
+    count = 0
     for line in f.readlines():
         id = line.split(" ")[0]
         ids.append(id[:7])
+        count += 1
+        if count >= number:
+            break
 
 for id in ids:
-    file_path = dir + id + ".txt"
+    file_path = os.path.join(dir, f"{id}.txt")
     if not os.path.exists(file_path):
         print(f"未找到{id}.txt")
         continue
@@ -96,9 +105,9 @@ for id in ids:
         continue
     
     # 获取修复补丁注释
-    fix = get_fix(id)
+    fix = get_fix(repo_dir, id)
     print(fix)
-    if fix == 'None':
+    if fix is None or fix == 'None':
         continue
     
     # 进行第一次分析
@@ -121,7 +130,7 @@ for id in ids:
         print(hash)
         if len(hash) > 7:
             hash = hash[:7]
-        commit = get_commit(hash)
+        commit = get_commit(repo_dir, hash)
         if commit == 'None':
             continue
         
