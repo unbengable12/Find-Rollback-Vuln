@@ -67,7 +67,7 @@ for id in ids:
         if commit == 'None':
             continue
         
-        prompt = GENERATOR_MARKDOWN_REPORTER.replace('<analysis>', data["commitA"]).replace('<hash>', hash).replace('commit', commit)
+        prompt = GENERATOR_MARKDOWN_REPORTER.replace('<analysis>', str(data["commitA"])).replace('<hash>', hash).replace('<content>', str(commit))
         print(f"prompt: \n{prompt}\n")
         res = gemini.prompt(prompt=prompt)
         print(f"res: \n{res}\n")
