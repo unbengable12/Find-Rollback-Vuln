@@ -11,16 +11,22 @@ pip install -r requirements.txt
 #### 2. 运行脚本
 ```
 export GEMINI_API_KEY='<your api key>'
-python run.py -g <github_url> -r <repo_name> -m <model> -n <number>
+python run.py -g <github_url> -r <repo_name> -m <model> -n <number> -a <auto>
+
+example:
+python run.py -r bentoml -n 500 -a True
+
 
 -g: GitHub仓库链接
 -r: 仓库名
 -m: 模型名称，默认为Gemini-2.0-flash-lite
 -n: 查询个数，默认为9999999999999
+-a: 是否自动生成commit_id.txt，默认为True
 ```
 结果保存在 `result` 文件夹中
 
 ### TODO
-```
-优化性能
-```
+
+* 优化性能
+* 新增大模型选项
+* 优化提示词
