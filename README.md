@@ -25,8 +25,8 @@ git log --oneline <tag>
 python generate.py
 ```
 #### 5. 运行脚本
-替换 `llm.py` 中的 `gemini_api_key`
 ```
+export GEMINI_API_KEY='<your api key>'
 python run.py
 ```
 结果保存在 `result` 文件夹中
