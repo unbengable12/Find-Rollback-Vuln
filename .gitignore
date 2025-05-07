@@ -4,3 +4,5 @@ output/
 result/
 test/
 temp/
+
+*.txt
