@@ -10,83 +10,39 @@ import shutil
 from generate import generate
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
-
 parser = argparse.ArgumentParser(description="命令行参数示例")
-parser.add_argument('-g', '--github', type=str, required=False, help='GitHub仓库链接')
-parser.add_argument('-r', '--repo', type=str, required=False, help='仓库名')
 parser.add_argument('-m', '--model', type=str, required=False, help='模型名', default='gemini-2.0-flash-lite', choices=['gemini-2.0-flash-lite', 'gemini-2.0-flash'])
-parser.add_argument('-n', '--number', type=int, required=False, help='检查最近提交的commit数量', default=999999999999)
-parser.add_argument('-a', '--auto', type=bool, required=False, help='是否自动生成commit_id.txt', default=True)
+parser.add_argument('-r', '--repo', type=str, required=False, help='本地仓库地址')
 args = parser.parse_args()
 
-github_url, repo, model, number, auto = args.github, args.repo, args.model, args.number, args.auto
+model, repo = args.model, args.repo
 
-if github_url is None and repo is None:
-    print("错误: GitHub 链接和仓库名不能同时为空。")
+if repo is None:
+    print("错误: 请输入本地仓库地址")
     exit(1)
-
-if github_url and repo is None:
-    path = urlparse(github_url).path
-    repo = os.path.splitext(os.path.basename(path))[0].lower()
-    if not repo:
-        print("错误: 无法从 GitHub 链接中解析出仓库名。")
+else:
+    if not os.path.exists(repo):
+        print("错误: 请输入正确的本地仓库地址")
+        exit(1)
+    if not os.path.exists(os.path.join(repo, '.git')):
+        print("错误: 请输入正确的本地仓库地址")
         exit(1)
 
-repo_dir = os.path.join(cur_dir, 'temp', repo)
-
-if github_url is None and repo:
-    if not os.path.exists(repo_dir):
-        print(f"本地仓库 {repo} 不存在")
-    print(f"使用本地仓库 {repo_dir}")
-    
-if github_url:
-    temp_dir = os.path.join(cur_dir, 'temp')
-    repo_dir = os.path.join(temp_dir, repo)
-    
-    # 创建 temp 文件夹
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-    
-    clone = True
-    
-    # 仓库已经存在
-    if os.path.exists(repo_dir):
-        print(f"仓库 '{repo}' 已存在，是否重新 clone?")
-        choice = input("请输入 Y/N: ").strip().upper()
-        if choice == 'Y':
-            print(f"正在删除旧仓库：{repo_dir}")
-            shutil.rmtree(repo_dir)
-        else:
-            print("已取消克隆操作")
-            clone = False
-    
-    try:
-        # 尝试克隆仓库
-        if clone:
-            subprocess.run(['git', 'clone', github_url, repo_dir], check=True)
-            print(f"已将 {github_url} 克隆到 {repo_dir}")
-    except subprocess.CalledProcessError as e:
-        print(f"克隆失败: {e}")
-        exit(1)
+repo_dir = repo
 
 gemini = LLM(model=model)
 
 id_path = os.path.join(cur_dir, 'commit_id.txt')
-dir = os.path.join(cur_dir, 'output')
+dir = os.path.join(cur_dir, 'output', 'reverse')
 output_path = os.path.join(cur_dir, 'result')
 
-generate(repo=repo_dir, number=number, auto=auto)
 
 # 读取待分析的commitId
 ids = []
 with open(id_path) as f:
-    count = 0
     for line in f.readlines():
         id = line.split(" ")[0]
         ids.append(id[:7])
-        count += 1
-        if count >= number:
-            break
 
 for id in ids:
     file_path = os.path.join(dir, f"{id}.txt")
