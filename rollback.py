@@ -3,6 +3,9 @@ import re
 import subprocess
 from collections import defaultdict
 import argparse
+import time
+# 开始计时
+start_time = time.time()
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 parser = argparse.ArgumentParser(description="命令行参数示例")
@@ -29,7 +32,8 @@ os.makedirs(output_dir, exist_ok=True)
 # Data structure to store rollback information
 rollback_index = defaultdict(lambda: {
     'description': '',
-    'rollback_by': defaultdict(lambda: defaultdict(set))
+    'rollback_by': defaultdict(lambda: defaultdict(set)),
+    'added_code': defaultdict(list)  # Store added code per file with line numbers
 })
 
 # Track processed entries to avoid duplicates
@@ -48,6 +52,39 @@ def get_commit_description(commit_id):
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return "[description not found]"
+
+def get_added_code(commit_id):
+    """Retrieve the new code added in a given commit with line numbers."""
+    try:
+        result = subprocess.run(
+            ["git", "show", "--unified=0", commit_id],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=repo
+        )
+        diff_output = result.stdout
+        added_code = defaultdict(list)
+        current_file = None
+        current_line_number = None
+
+        for line in diff_output.splitlines():
+            if line.startswith("+++ b/"):
+                current_file = line[6:].strip()
+            elif line.startswith("@@"):
+                # Parse line numbers from @@ -x,y +a,b @@
+                match = re.search(r'\+(\d+)(?:,\d+)? @@', line)
+                if match:
+                    current_line_number = int(match.group(1))
+            elif line.startswith("+") and current_file and not line.startswith("+++"):
+                # Extract added line (remove the leading '+')
+                added_line = line[1:].strip()
+                if added_line:  # Ignore empty lines
+                    added_code[current_file].append((current_line_number, added_line))
+                    current_line_number += 1  # Increment for the next added line
+        return added_code
+    except subprocess.CalledProcessError:
+        return defaultdict(list)
 
 # Parse rollback output
 for filename in os.listdir(input_dir):
@@ -80,6 +117,7 @@ for filename in os.listdir(input_dir):
             current_commit = line.split()[-1]
             if not rollback_index[current_commit]['description']:
                 rollback_index[current_commit]['description'] = get_commit_description(current_commit)
+                rollback_index[current_commit]['added_code'] = get_added_code(current_commit)
         elif line.strip().startswith("File Path:"):
             # Save any pending content before switching files
             if current_commit and current_file and current_lines and line_content:
@@ -123,6 +161,11 @@ for commit_id, info in rollback_index.items():
         f.write("description: |\n")
         for desc_line in info['description'].splitlines():
             f.write(f"  {desc_line}\n")
+        f.write("added_code:\n")
+        for file, lines in info['added_code'].items():
+            f.write(f"  file: {file}\n")
+            for lineno, content in sorted(lines):  # Sort by line number
+                f.write(f"    line {lineno}: '{content}'\n")
         f.write("rollback_by:\n")
         for rollback_commit, file_lines in info['rollback_by'].items():
             f.write(f"  commit: {rollback_commit}\n")
@@ -130,3 +173,7 @@ for commit_id, info in rollback_index.items():
                 f.write(f"    file: {file}\n")
                 for lineno, content in sorted(lines):
                     f.write(f"      line {lineno}: '{content}'\n")
+                    
+# 计算执行时间
+execution_time = time.time() - start_time
+print('execution_time: {:.2f} seconds'.format(execution_time))
