@@ -2,8 +2,25 @@ import os
 import re
 import subprocess
 from collections import defaultdict
+import argparse
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
+parser = argparse.ArgumentParser(description="命令行参数示例")
+parser.add_argument('-r', '--repo', type=str, required=False, help='本地仓库地址')
+args = parser.parse_args()
+
+repo = args.repo
+
+if repo is None:
+    print("错误: 请输入本地仓库地址")
+    exit(1)
+else:
+    if not os.path.exists(repo):
+        print("错误: 请输入正确的本地仓库地址")
+        exit(1)
+    if not os.path.exists(os.path.join(repo, '.git')):
+        print("错误: 请输入正确的本地仓库地址")
+        exit(1)
 
 input_dir = os.path.join(cur_dir, 'output', 'index')
 output_dir = os.path.join(cur_dir, 'output', 'reverse_index')
@@ -25,7 +42,8 @@ def get_commit_description(commit_id):
             ["git", "show", "-s", "--format=%B", commit_id],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            cwd=repo
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
