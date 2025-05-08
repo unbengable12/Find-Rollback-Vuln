@@ -51,7 +51,7 @@ if github:
             print("已取消克隆操作")
             clone = False
     else:
-        os.mkdir(repo_dir)
+        os.makedirs(repo_dir)
     
     try:
         # 尝试克隆仓库
