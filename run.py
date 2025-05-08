@@ -5,9 +5,6 @@ import json
 from utils import *
 from prompt import *
 import argparse
-from urllib.parse import urlparse
-import shutil
-from generate import generate
 
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 parser = argparse.ArgumentParser(description="命令行参数示例")
@@ -33,42 +30,41 @@ repo_dir = repo
 gemini = LLM(model=model)
 
 id_path = os.path.join(cur_dir, 'commit_id.txt')
-dir = os.path.join(cur_dir, 'output', 'reverse')
+input_dir = os.path.join(cur_dir, 'output', 'reverse_index')
 output_path = os.path.join(cur_dir, 'result')
 
+input_files = []
+for root, dirs, files in os.walk(input_dir):
+    for file in files:
+        file_path = os.path.join(root, file)
+        input_files.append(file_path)
 
-# 读取待分析的commitId
-ids = []
-with open(id_path) as f:
-    for line in f.readlines():
-        id = line.split(" ")[0]
-        ids.append(id[:7])
-
-for id in ids:
-    file_path = os.path.join(dir, f"{id}.txt")
+for file_path in input_files:
     if not os.path.exists(file_path):
         print(f"未找到{id}.txt")
         continue
-    print(file_path)
     
-    # 获取commitA的回滚信息
+    print(file_path)
+    # 获取commitA的信息
     commmitA = ''
     with open(file_path, 'r', encoding='utf-8') as f:
         commmitA = ''.join(f.readlines())
+    commmitA = commmitA.strip()
     print(commmitA)
     
-    # 后续没有回滚代码
-    if commmitA.rfind("没有后续提交删除了commitA添加的代码") != -1:
+    # 如果在commit描述中没有查询到 fix 字眼
+    if commmitA.find('fix') == -1:
         continue
-    
-    # 获取修复补丁注释
-    fix = get_fix(repo_dir, id)
-    print(fix)
-    if fix is None or fix == 'None':
-        continue
-    
+    # 如果没有回滚情况
+    index = commmitA.rfind('rollback_by:')
+    if index != -1:
+        if index + len('rollback_by:') == len(commmitA):
+            continue
+        remaining_part = commmitA[index + len('rollback_by:'):]
+        if remaining_part.isspace():
+            continue
     # 进行第一次分析
-    prompt = FIND_COMMIT_HASH_PROMPT.replace('<fix>', fix).replace('<content>', commmitA)
+    prompt = FIND_COMMIT_HASH_PROMPT.replace('<content>', commmitA)
     print(f"prompt: \n{prompt}\n")
 
     analysis = gemini.prompt(prompt=prompt).strip('```json').strip('```').strip()
@@ -76,6 +72,8 @@ for id in ids:
     
     try:
         data = json.loads(analysis)
+        if not data['fix']:
+            continue
     except Exception as e:
         print(f"JSON转化错误：{e}")
         continue
@@ -98,5 +96,4 @@ for id in ids:
         
         # 大模型生成中没有找到 “用其他代码完成了补丁任务” 则打印markdown文档
         if res.find("用其他代码完成了补丁任务") == -1:
-            save_file(output_path, f"{id}.md", res)
-    
+            save_file(output_path, f"{hash[:7]}.md", res)

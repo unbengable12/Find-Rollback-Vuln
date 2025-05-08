@@ -4,15 +4,17 @@ FIND_COMMIT_HASH_PROMPT = '''
 以下数据描述了一个特定提交（称为 commitA）在指定分支上的新增代码行，以及后续版本标签中这些新增内容被回滚（删除或修改）的情况。
 特别地，我关注 commitA 中与补丁相关的代码（即修复 bug、解决特定问题或临时调整的代码），并希望识别后续回滚这些补丁代码的提交。
 
-请先根据 commitA 的修复补丁注释，从 commitA 的新增内容中找出对应的代码。
-然后，在下方的回滚 commit 中，找到回滚这部分代码的 commit。
-最后，用json格式返回结果。
+你的任务为：
+1. 请先从 commmitA 的描述（`description`）中提取修复补丁，如果描述中没有包含修复的内容，则在返回中将 `fix` 设置为 False，否则根据修复补丁，从 commitA 的新增代码（`added_code`）中找出对应的代码.
+2. 然后，在下方的回滚 commit（`rollback_by`） 中，找到回滚这部分代码的 commit。
+3. 最后，用json格式返回结果。
 
 你需要返回一个json格式的数据，包含commitA中的补丁代码和对应回滚的commit hash。
 
 格式样例：
 ```json
 {
+  "fix": True,
   "commitA": {
     "hash": "xxxxxxx",
     "patch_comment": "xxxxxxxx",
@@ -45,9 +47,6 @@ FIND_COMMIT_HASH_PROMPT = '''
     }
   ]
 }
-
-修复补丁注释为:
-<fix>
 
 具体内容为:
 <content>
