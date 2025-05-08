@@ -9,24 +9,27 @@ git clone https://github.com/unbengable12/Find-Rollback-Vuln.git
 pip install -r requirements.txt
 ```
 #### 2. 运行脚本
-```
+```sh
 export GEMINI_API_KEY='<your api key>'
-python run.py -g <github_url> -r <repo_name> -m <model> -n <number> -a <auto>
 
-example:
-python run.py -r bentoml -n 500 -a True
+# 生成正向索引
+python generate.py -g <github_url> -r <repo_address>
+* 两个参数二选一
+-g: github 仓库地址
+-r: 本地仓库地址
 
+# 生成反向索引
+python rollback.py -r <repo_address>
+-r: 本地仓库地址
 
--g: GitHub仓库链接
--r: 仓库名
--m: 模型名称，默认为Gemini-2.0-flash-lite
--n: 查询个数，默认为9999999999999
--a: 是否自动生成commit_id.txt，默认为True
+# 运行脚本
+python run.py -r <repo_address> -m <model> 
+-r: 本地仓库地址
+-m: gemini 模型名称
 ```
 结果保存在 `result` 文件夹中
 
 ### TODO
 
-* 优化性能
 * 新增大模型选项
 * 优化提示词
